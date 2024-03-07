@@ -1,4 +1,1 @@
-pip install selenium
 pip install seleniumbase 
-pip install BeautifulSoup
-pip install html5lib
