@@ -25,3 +25,5 @@
 - Zone Horaires : <div class="zone-info-horaires"> -> <ul class="liste-horaires-principaux"> -> <li class="horaire-ouvert"> -> [<p class="jour">, <span class="horaire">]
 - Réseaux Sociaux : <div class="bloc-info-sites-reseaux"> -> <ul class="clearfix"> -> <li class="premiere-visibilite">
 - Coordonnées Other Phone : <span class="coord-numero">
+- Next page: <span id="SEL-compteur"> => [<strong value="page 1">/100] : &page=['1','2','...']
+- Filter: &tri=['PERTINENCE-ASC','NOTE_GLOBALE-DESC','NOMBRE_GLOBAL_AVIS-DESC']
