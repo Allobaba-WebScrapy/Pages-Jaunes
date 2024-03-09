@@ -309,11 +309,11 @@ class PageJaunesScraper:
                 )
                 self.get_card_info(base_url, card_url)
 
-    def start_app(self):
+    def run(self):
         """
         Starts the application by initializing the web driver and executing the scraping process.
         """
-        with SB(uc_cdp=True, guest_mode=True, headless=False, undetected=True) as sb:
+        with SB(uc_cdp=True, guest_mode=True, headless=True, undetected=True) as sb:
             self.sb = sb
             self.sb.set_window_size(600, 1200)
             self.sb.open("https://www.pagesjaunes.fr")
@@ -366,4 +366,4 @@ scraper = PageJaunesScraper()
 
 for url in client_urls[:1]:
     scraper.add_base_url(url["url"], params=url.get("params"), limit=url.get("limit"))
-print(scraper.start_app())
+print(scraper.run())
