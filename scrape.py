@@ -299,7 +299,7 @@ class PageJaunesScraper:
                     continue
             print(lists_card_url)
             # for card_url in lists_card_url:
-            for card_url in lists_card_url[:1]:
+            for card_url in lists_card_url[:0]:
                 self.data[-1]["pages"][-1]["cards"].append(
                     {
                         "card_id": card_url["card_id"],
@@ -313,7 +313,7 @@ class PageJaunesScraper:
         """
         Starts the application by initializing the web driver and executing the scraping process.
         """
-        with SB(uc_cdp=True, guest_mode=True, headless=True, undetected=True) as sb:
+        with SB(uc_cdp=True, guest_mode=True, headless=False, undetected=True) as sb:
             self.sb = sb
             self.sb.set_window_size(600, 1200)
             self.sb.open("https://www.pagesjaunes.fr")
@@ -351,10 +351,11 @@ class PageJaunesScraper:
                         )
                         print("|__Next Page__|:", url)
                         self.app(url)
+                    yield self.data[-1]
                 except Exception as e:
                     print("Error:", e)
                 print("__" * 70)
-            return self.data
+            # return self.data
 
     def add_base_url(self, url, params=None, limit=1):
         self.base_urls.append({"url": url, "params": params, "limit": limit})
@@ -362,8 +363,8 @@ class PageJaunesScraper:
         # --------------------------------------- Start App ----------------------------------------
 
 
-scraper = PageJaunesScraper()
+# scraper = PageJaunesScraper()
 
-for url in client_urls[:1]:
-    scraper.add_base_url(url["url"], params=url.get("params"), limit=url.get("limit"))
-print(scraper.run())
+# for url in client_urls[:1]:
+#     scraper.add_base_url(url["url"], params=url.get("params"), limit=url.get("limit"))
+# print(scraper.run())
