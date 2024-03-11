@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, stream_with_context, Response
+from flask import Flask, jsonify, stream_with_context, request, Response
 from flask_cors import CORS  # Import CORS from flask_cors module
 from scrape import PageJaunesScraper
 from data import client_urls
@@ -11,13 +11,17 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes in the Flask app
 scraper = PageJaunesScraper()
 
+
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"Flask": "Welcome to the PageJaunes Scraper API!"})
 
+
 #! Server Side Events (SSE) route
-@app.route("/stream")
+@app.route("/stream", methods=["POST"])
 def index():
+    # params = request.get_json()
+
     def generate():
         # Start time
         start_time = time.time()
@@ -27,6 +31,10 @@ def index():
             scraper.add_base_url(
                 url["url"], params=url.get("params"), limit=url.get("limit")
             )
+        # for url in params:
+        #     scraper.add_base_url(
+        #         url["url"], params=url.get("params"), limit=url.get("limit")
+        # )
 
         # End time
         end_time = time.time()
