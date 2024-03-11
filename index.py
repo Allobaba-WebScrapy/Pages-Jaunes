@@ -1,36 +1,48 @@
-from flask import Flask, jsonify
-from scrape import PageJaunesScraper 
+from flask import Flask, jsonify, stream_with_context, Response
+from flask_cors import CORS  # Import CORS from flask_cors module
+from scrape import PageJaunesScraper
 from data import client_urls
-import time
+import requests
 import json
+import time
 
 
-scraper = PageJaunesScraper()
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes in the Flask app
+scraper = PageJaunesScraper()
 
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({"Flask": "Welcome to the PageJaunes Scraper API!"})
 
-#! Server Side
-from flask import stream_with_context, Response
-
-@app.route("/")
+#! Server Side Events (SSE) route
+@app.route("/stream")
 def index():
     def generate():
         # Start time
         start_time = time.time()
         print("Server is running!")
-        for url in client_urls[:2]:
+
+        for url in client_urls[:3]:
             scraper.add_base_url(
                 url["url"], params=url.get("params"), limit=url.get("limit")
             )
+
         # End time
         end_time = time.time()
         execution_time = end_time - start_time
+
         for item in scraper.run():
+            # Send each item as a POST request to localhost:3000/data
+            # requests.post("http://localhost:3000/data", json=item)
+
+            # Yield the item for SSE (optional)
             yield f"data:{json.dumps(item)}\n\n"
+
         print("Execution time:", execution_time, "seconds")
 
-    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+    return Response(generate(), mimetype="text/event-stream")
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3030)
+    app.run(host="0.0.0.0", port=3050)
