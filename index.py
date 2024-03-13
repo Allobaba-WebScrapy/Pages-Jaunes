@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, stream_with_context, request, Response
 from flask_cors import CORS  # Import CORS from flask_cors module
 from scrape import PageJaunesScraper
+
 from data import client_urls
 import requests
 import json
@@ -17,40 +18,66 @@ def home():
     return jsonify({"Flask": "Welcome to the PageJaunes Scraper API!"})
 
 
+@app.route("/setup", methods=["POST"])
+def setup():
+    client_urls = request.get_json()
+    # Add the URLs to the scraper
+    scraper.server_urls = client_urls
+    return jsonify({"status": "Setup complete"})
+
+
+@app.route("/stream")
+def stream():
+    def event_stream():
+        # Run the scraper and yield the results
+        for result in scraper.run():
+            yield f"data: {json.dumps(result)}\n\n"
+        # Send a 'done' event when the scraper has finished running
+        yield "event: done\ndata: Done\n\n"
+
+    return Response(event_stream(), mimetype="text/event-stream")
+
+
 #! Server Side Events (SSE) route
-@app.route("/stream", methods=["POST"])
-def index():
-    # params = request.get_json()
+# @app.route("/stream1")
+# def index():
+#     # params = request.get_json()
 
-    def generate():
-        # Start time
-        start_time = time.time()
-        print("Server is running!")
+#     def generate():
+#         # Start time
+#         start_time = time.time()
+#         print("Server is running!")
 
-        for url in client_urls[:3]:
-            scraper.add_base_url(
-                url["url"], params=url.get("params"), limit=url.get("limit")
-            )
-        # for url in params:
-        #     scraper.add_base_url(
-        #         url["url"], params=url.get("params"), limit=url.get("limit")
-        # )
+#         scraper.server_urls = [
+#             {
+#                 "genre":"B2B",
+#                 "start-limit": "2",
+#                 "end-limit": "2",
+#                 "url": "https://www.pagesjaunes.fr/annuaire/chercherlespros?quoiqui=restaurants&ou=paris-75&&page=2&tri=PERTINENCE-ASC",
+#             },
+#             # {
+#             #     "genre":"B2C",
+#             #     "start-limit": "2",
+#             #     "end-limit": "1",
+#             #     "url": "https://www.pagesjaunes.fr/annuaire/chercherlespros?quoiqui=agences+immobilieres&ou=strasbourg-67&&tri=PERTINENCE-ASC&page=1",
+#             # },
+            
+#         ]
 
-        # End time
-        end_time = time.time()
-        execution_time = end_time - start_time
+#         for item in scraper.run():
+#             # Send each item as a POST request to localhost:3000/data
+#             # requests.post("http://localhost:3000/data", json=item)
 
-        for item in scraper.run():
-            # Send each item as a POST request to localhost:3000/data
-            # requests.post("http://localhost:3000/data", json=item)
+#             # Yield the item for SSE (optional)
+#             yield f"data:{json.dumps(item)}\n\n"
+#             # End time
+#         yield "event: done\ndata: Done\n\n"
+#         end_time = time.time()
+#         execution_time = end_time - start_time
+#         print("Execution time:", execution_time, "seconds")
 
-            # Yield the item for SSE (optional)
-            yield f"data:{json.dumps(item)}\n\n"
-
-        print("Execution time:", execution_time, "seconds")
-
-    return Response(generate(), mimetype="text/event-stream")
+#     return Response(generate(), mimetype="text/event-stream")
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3050)
+    app.run(host="0.0.0.0", port=5070)
