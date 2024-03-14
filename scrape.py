@@ -252,3 +252,21 @@ class PageJaunesScraper:
 # for url in client_urls[:1]:
 #     scraper.add_base_url(url["url"], params=url.get("params"), limit=url.get("limit"))
 # print(scraper.run())
+def passCloudFareVerification(self, attempts=3):
+    """
+    Handles the CloudFare verification process.
+    """
+    try:
+        self.verify_success()
+        return True
+    except Exception as e:
+        if attempts <= 0:
+            return False
+        
+        if self.sb.is_element_visible('input[value*="Verify"]'):
+            self.sb.click('input[value*="Verify"]')
+        elif self.sb.is_element_visible('iframe[title*="challenge"]'):
+            self.sb.switch_to_frame('iframe[title*="challenge"]')
+            self.sb.click("span.mark")
+        # time.sleep(2)  # Attente avant de réessayer
+        return self.passCloudFareVerification(attempts - 1)
