@@ -106,13 +106,12 @@ class PageJaunesScraper:
                     )
                     if self.data[-1]["genre"] == self.classify_number(phone_text):
                         print("Telephone genre found: ", phone_text)
-                        return {True, phone_text}
+                        return {"isValid": True, "phone": phone_text}
                     else:
-                        return {False, phone_text}
-            else:
-                return {False, "No phone number found!"}
+                        return {"isValid": False, "phone": phone_text}
         except:
             print("Telephone not found within the given time.")
+            return {"isValid": False, "phone": "No phone number found!"}
 
     def get_card_info(self, index):
         #!---------------------------- Title ----------------------------
@@ -127,7 +126,7 @@ class PageJaunesScraper:
         adress = self.get_simple_info(
             f"li.bi:nth-child({index+1}) div.bi-address.small a"
         ).replace(" Voir le plan", "")
-        return {title, activite, adress}
+        return {"title": title, "activite": activite, "adress": adress}
 
     def scrap_page(self, base_url):
         print("Page: ", base_url)
@@ -143,18 +142,24 @@ class PageJaunesScraper:
         #     compteur = self.sb.get_text("span#SEL-compteur")
         #     print(self.get_limits_pages(compteur))
         try:
-            if self.sb.wait_for_element_visible("span#SEL-nbresultat", timeout=1):
+            if self.sb.wait_for_element_visible("span#SEL-nbresultat", timeout=10):
                 print(self.sb.get_text("span#SEL-nbresultat"))
-                # ----------------------------------------------------------------
+                # --------------------------------- Page is loaded -------------------------------
                 if self.sb.is_element_visible("ul.bi-list"):
                     lists_li = self.sb.find_elements("ul.bi-list li.bi")
                     for index, list in enumerate(lists_li):
-                        isValid, phone = self.check_valid_card(index)
+                        result = self.check_valid_card(index)
+                        isValid = result.get("isValid", False)
+                        phone = result.get("phone", "No phone number found!")
                         if isValid:
                             list_id = self.sb.get_attribute(
                                 f"li.bi:nth-child({index+1})", "id"
                             ).split("-")[1]
-                            title, activite, adress = self.get_card_info(index)
+                            # ---------------- Card Info ----------------
+                            result = self.get_card_info(index)
+                            title = result["title"]
+                            activite = result["activite"]
+                            adress = result["adress"]
                             self.data[-1]["pages"][-1]["cards"].append(
                                 {
                                     "card_id": list_id,
@@ -168,6 +173,7 @@ class PageJaunesScraper:
                                 }
                             )
                             yield self.data[-1]["pages"][-1]["cards"][-1]
+                            # ------------------------------------------------
         except TimeoutException:
             print("Page not found!")
 
@@ -184,7 +190,11 @@ class PageJaunesScraper:
         ) as sb:
             self.sb = sb
             self.sb.set_window_size(600, 1200)
-            self.sb.open("https://www.pagesjaunes.fr")
+            try:
+                self.sb.open("https://www.pagesjaunes.fr")
+                self.sb.wait_for_ready_state_complete(timeout=10)
+            except TimeoutException:
+                print("Page Jaune not found!")
 
             #! Try to pass the CloudFare verification process
             # try:
