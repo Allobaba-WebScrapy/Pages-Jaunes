@@ -2,7 +2,7 @@ client_urls = [
     {
         "genre": "B2B",
         "start-limit": "2",
-        "end-limit": "2",
+        "end-limit": "1",
         "url": "https://www.pagesjaunes.fr/annuaire/chercherlespros?quoiqui=restaurants&ou=paris-75&&page=2&tri=PERTINENCE-ASC",
     },
     {
