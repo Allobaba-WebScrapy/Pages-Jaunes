@@ -29,53 +29,42 @@ def setup():
 @app.route("/stream")
 def stream():
     def event_stream():
-        # Run the scraper and yield the results
+        results = list()
         for result in scraper.run():
+            results.append(result)
             yield f"data: {json.dumps(result)}\n\n"
-        # Send a 'done' event when the scraper has finished running
-        yield "event: done\ndata: Done\n\n"
+        if not results:
+            yield f"event: failedVerification\ndata: {json.dumps({'error':'Verification failed'})}\n\n"
+            return
 
     return Response(event_stream(), mimetype="text/event-stream")
 
 
 #! Server Side Events (SSE) route
-# @app.route("/stream1")
-# def index():
-#     # params = request.get_json()
+@app.route("/s")
+def index():
+    # params = request.get_json()
 
-#     def generate():
-#         # Start time
-#         start_time = time.time()
-#         print("Server is running!")
+    def generate():
+        # Start time
+        start_time = time.time()
+        print("Server is running!")
 
-#         scraper.server_urls = client_urls[:1]
+        scraper.server_urls = client_urls[:1]
 
-#         # scraper.server_urls = [
-#         #     {
-#         #         "genre":"B2B",
-#         #         "start-limit": "2",
-#         #         "end-limit": "2",
-#         #         "url": "https://www.pagesjaunes.fr/annuaire/chercherlespros?quoiqui=restaurants&ou=paris-75&&page=2&tri=PERTINENCE-ASC",
-#         #     },
-#         #     # {
-#         #     #     "genre":"B2C",
-#         #     #     "start-limit": "2",
-#         #     #     "end-limit": "1",
-#         #     #     "url": "https://www.pagesjaunes.fr/annuaire/chercherlespros?quoiqui=agences+immobilieres&ou=strasbourg-67&&tri=PERTINENCE-ASC&page=1",
-#         #     # },
+        results = list()
+        for result in scraper.run():
+            results.append(result)
+            yield f"data: {json.dumps(result)}\n\n"
+        if not results:
+            yield "event: error\ndata: Verification failed\n\n"
+            return
 
-#         # ]
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print("Execution time:", execution_time, "seconds")
 
-#         for item in scraper.run():
-#             # Yield the item for SSE (optional)
-#             yield f"data:{json.dumps(item)}\n\n"
-#         # End of request
-#         yield "event: done\ndata: Done\n\n"
-#         end_time = time.time()
-#         execution_time = end_time - start_time
-#         print("Execution time:", execution_time, "seconds")
-
-#     return Response(generate(), mimetype="text/event-stream")
+    return Response(generate(), mimetype="text/event-stream")
 
 
 if __name__ == "__main__":
