@@ -102,7 +102,7 @@ class PageJaunesScraper:
                     f"li.bi:nth-child({index+1}) div.bi-ctas div.bi-fantomas div.number-contact"
                 )
                 isValid = False
-                validPhones = []
+                gotPhones = []
                 for phoneIndex, phone in enumerate(phones):
                     if self.sb.is_element_visible(
                         f"li.bi:nth-child({index+1}) div.bi-ctas div.number-contact:nth-child({phoneIndex+1}) > span:last-child"
@@ -110,11 +110,12 @@ class PageJaunesScraper:
                         phone_text = self.sb.get_text(
                             f"li.bi:nth-child({index+1}) div.bi-ctas div.number-contact:nth-child({phoneIndex+1}) > span:last-child"
                         )
+                        gotPhones.append(phone_text)
                         if self.data[-1]["genre"] == self.classify_number(phone_text):
                             isValid = True
-                            validPhones.append(phone_text)
-                print("Telephone genre found: ", list(dict.fromkeys(validPhones)))
-                return {"isValid": isValid, "phone": list(dict.fromkeys(validPhones))}
+
+                print("Telephone genre found: ", list(dict.fromkeys(gotPhones)))
+                return {"isValid": isValid, "phone": list(dict.fromkeys(gotPhones))}
         except:
             print("Telephone not found within the given time.")
             return {"isValid": False, "phone": "No phone number found!"}
@@ -181,10 +182,13 @@ class PageJaunesScraper:
                 if self.sb.is_element_visible("ul.bi-list"):
                     lists_li = self.sb.find_elements("ul.bi-list li.bi")
                     for index, list in enumerate(lists_li):
-                        result = self.check_valid_card(index)
+                        result = self.check_valid_card(index) or {
+                            "isValid": False,
+                            "phone": "No phone number found!",
+                        }
                         isValid = result.get("isValid", False)
                         phone = result.get("phone", "No phone number found!")
-                        if isValid:
+                        if isValid or self.data[-1]["genre"] == "all":
                             card_id = self.sb.get_attribute(
                                 f"li.bi:nth-child({index+1})", "id"
                             ).split("-")[1]
@@ -216,12 +220,13 @@ class PageJaunesScraper:
         """
         with SB(
             uc_cdp=True,
+            # agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             guest_mode=True,
-            headless=False,
+            headless=True,
             undetected=True,
         ) as sb:
             self.sb = sb
-            # self.sb.set_window_size(600, 1200)
+            self.sb.set_window_size(600, 1200)
             try:
                 self.sb.open("https://www.pagesjaunes.fr")
                 self.sb.wait_for_ready_state_complete(timeout=10)
@@ -248,6 +253,7 @@ class PageJaunesScraper:
 
                 # Loop through provided URLs and iterate over each to navigate through each subsequent page.
                 for server_url in self.__server_urls:
+                    print(server_url)
                     try:
                         url = server_url["url"]
                         start_limit = int(server_url.get("start-limit"))
