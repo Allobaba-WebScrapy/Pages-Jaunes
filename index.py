@@ -1,9 +1,7 @@
-from flask import Flask, jsonify, stream_with_context, request, Response
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS  # Import CORS from flask_cors module
 from scrape import PageJaunesScraper
-
 from data import client_urls
-import requests
 import json
 import time
 
@@ -20,8 +18,9 @@ def home():
 
 @app.route("/setup", methods=["POST"])
 def setup():
-    client_urls = request.get_json()
-    # Add the URLs to the scraper
+    data = request.get_json()
+    client_urls = [data]
+    print(client_urls)
     scraper.server_urls = client_urls
     return jsonify({"status": "Setup complete"})
 
@@ -30,17 +29,28 @@ def setup():
 def stream():
     def event_stream():
         results = list()
+        yield f"event: progress\ndata: {json.dumps({"type":"progress", "progress": "Scraping started!"})}\n\n"
         for result in scraper.run():
-            results.append(result)
-            yield f"data: {json.dumps(result)}\n\n"
+            if 'progress' in result:
+                print("Progress update:", result['progress'])
+                yield f"event: progress\ndata: {json.dumps(result)}\n\n"
+            elif 'error' in result:
+                print("Error:", result['error'])
+                yield f"errorEvent: error\ndata: {json.dumps(result)}\n\n"
+            else:
+                results.append(result)
+                yield f"data: {json.dumps(result)}\n\n"
         if not results:
-            yield f"event: failedVerification\ndata: {json.dumps({'error':'Verification failed'})}\n\n"
+            yield f"event: errorEvent\ndata: {json.dumps({"type":"error", "error":"Bybass verification failed No result!"})}\n\n"
             return
+        else:
+            # save_to_csv(result, f"static/{scraper.fileName}.csv")
+            yield f"event: done\ndata: done\n\n"
 
     return Response(event_stream(), mimetype="text/event-stream")
 
 
-#! Server Side Events (SSE) route
+#! Server Side Events (SSE) route For Test
 @app.route("/s")
 def index():
     # params = request.get_json()
@@ -54,11 +64,19 @@ def index():
 
         results = list()
         for result in scraper.run():
-            results.append(result)
-            yield f"data: {json.dumps(result)}\n\n"
+            if 'progress' in result:
+                print("Progress update:", result['progress'])
+                yield f"event: progress\ndata: {json.dumps(result)}\n\n"
+            elif 'error' in result:
+                print("Error:", result['error'])
+                yield f"errorEvent: error\ndata: {json.dumps(result)}\n\n"
+            else:
+                yield f"data: {json.dumps(result)}\n\n"
         if not results:
-            yield "event: error\ndata: Verification failed\n\n"
+            yield "event: errorEvent\ndata: Verification failed Not result\n\n"
             return
+        else:
+            yield f"event: done\ndata: done\n\n"
 
         end_time = time.time()
         execution_time = end_time - start_time
@@ -68,4 +86,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3090)
+    app.run(host="0.0.0.0", port=3070)
