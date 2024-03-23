@@ -71,6 +71,7 @@ RUN find . -name __pycache__ -delete
 RUN pip3 install --upgrade pip setuptools wheel
 RUN cd /SeleniumBase && ls && pip3 install -r requirements.txt --upgrade
 RUN cd /SeleniumBase && pip3 install .
+RUN pip3 install flask
 
 #=====================
 # Download WebDrivers
@@ -96,5 +97,6 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 
 
 COPY ./index.py .
+COPY ./scrape.py .
 
 CMD ["/bin/bash && python3", "index.py"]
