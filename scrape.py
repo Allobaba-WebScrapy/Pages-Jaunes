@@ -99,26 +99,32 @@ class PageJaunesScraper:
             ):
                 self.sb.click(f"li.bi:nth-child({index+1}) div.bi-ctas button")
                 phones = self.sb.find_elements(
-                    f"li.bi:nth-child({index+1}) div.bi-ctas div.bi-fantomas div.number-contact"
+                    f"li.bi:nth-child({index +
+                                       1}) div.bi-ctas div.bi-fantomas div.number-contact"
                 )
                 isValid = False
                 gotPhones = []
                 for phoneIndex, phone in enumerate(phones):
                     if self.sb.is_element_visible(
-                        f"li.bi:nth-child({index+1}) div.bi-ctas div.number-contact:nth-child({phoneIndex+1}) > span:last-child"
+                        f"li.bi:nth-child({index+1}) div.bi-ctas div.number-contact:nth-child({
+                            phoneIndex+1}) > span:last-child"
                     ):
                         phone_text = self.sb.get_text(
-                            f"li.bi:nth-child({index+1}) div.bi-ctas div.number-contact:nth-child({phoneIndex+1}) > span:last-child"
+                            f"li.bi:nth-child({index+1}) div.bi-ctas div.number-contact:nth-child({
+                                phoneIndex+1}) > span:last-child"
                         )
                         gotPhones.append(phone_text)
-                        if self.data[-1]["genre"] == self.classify_number(phone_text):
+                        if self.data[-1]["businessType"] == self.classify_number(
+                            phone_text
+                        ):
                             isValid = True
 
-                print("Telephone genre found: ", list(dict.fromkeys(gotPhones)))
+                print("Telephone businessType found: ",
+                      list(dict.fromkeys(gotPhones)))
                 return {"isValid": isValid, "phone": list(dict.fromkeys(gotPhones))}
         except:
             print("Telephone not found within the given time.")
-            return {"isValid": False, "phone": "No phone number found!"}
+            return {"isValid": False, "phone": "Element not found!"}
 
     # def check_valid_card(self, index):
     #     try:
@@ -132,8 +138,8 @@ class PageJaunesScraper:
     #                 phone_text = self.sb.get_text(
     #                     f"li.bi:nth-child({index+1}) div.bi-ctas div.number-contact > span:last-child"
     #                 )
-    #                 if self.data[-1]["genre"] == self.classify_number(phone_text):
-    #                     print("Telephone genre found: ", phone_text)
+    #                 if self.data[-1]["businessType"] == self.classify_number(phone_text):
+    #                     print("Telephone businessType found: ", phone_text)
     #                     return {"isValid": True, "phone": phone_text}
     #                 else:
     #                     return {"isValid": False, "phone": phone_text}
@@ -150,69 +156,78 @@ class PageJaunesScraper:
         activite = self.get_simple_info(
             f"li.bi:nth-child({index+1}) span.bi-activity-unit.small"
         )
-        #!---------------------------- Adress ----------------------------
-        adress = self.get_simple_info(
+        #!---------------------------- Address ----------------------------
+        address = self.get_simple_info(
             f"li.bi:nth-child({index+1}) div.bi-address.small a"
         ).replace(" Voir le plan", "")
-        return {"title": title, "activite": activite, "adress": adress}
+        return {"title": title, "activite": activite, "address": address}
 
-    def scrap_page(self, base_url):
+    def scrap_page(self, base_url, index, endPage):
         print("Page: ", base_url)
         """
         Main application logic for scraping data from the base URL.
         """
         try:
             self.sb.open(base_url)
-            self.sb.wait_for_ready_state_complete(timeout=10)
-        except TimeoutException:
+            self.sb.wait_for_ready_state_complete(timeout=5)
+        except :
             print("Page not found!")
+            yield {"type":"error", "error": f"Page not found: {index}/{endPage}"}
             return
         try:
-            if self.sb.is_element_visible("span.didomi-continue-without-agreeing"):
+            if self.sb.wait_for_element_visible(
+                "span.didomi-continue-without-agreeing", timeout=1
+            ):
                 self.sb.click("span.didomi-continue-without-agreeing")
         except:
             pass
-        # if self.sb.is_element_visible("span#SEL-compteur"):
-        #     compteur = self.sb.get_text("span#SEL-compteur")
-        #     print(self.get_limits_pages(compteur))
-        try:
-            if self.sb.wait_for_element_visible("span#SEL-nbresultat", timeout=10):
+            # if self.sb.is_element_visible("span#SEL-compteur"):
+            #     compteur = self.sb.get_text("span#SEL-compteur")
+            #     print(self.get_limits_pages(compteur))
+            if self.sb.wait_for_element_visible("span#SEL-nbresultat", timeout=2):
+                yield {"type":"progress", "progress": f"Scraping Page : {index}/{endPage}", "cardsNumbers": 0}
                 print("Page Found :", self.sb.get_text("span#SEL-nbresultat"))
                 # --------------------------------- Page is loaded -------------------------------
                 if self.sb.is_element_visible("ul.bi-list"):
                     lists_li = self.sb.find_elements("ul.bi-list li.bi")
                     for index, list in enumerate(lists_li):
-                        result = self.check_valid_card(index) or {
-                            "isValid": False,
-                            "phone": "No phone number found!",
-                        }
-                        isValid = result.get("isValid", False)
-                        phone = result.get("phone", "No phone number found!")
-                        if isValid or self.data[-1]["genre"] == "all":
-                            card_id = self.sb.get_attribute(
-                                f"li.bi:nth-child({index+1})", "id"
-                            ).split("-")[1]
-                            # ---------------- Card Info ----------------
-                            result = self.get_card_info(index)
-                            title = result["title"]
-                            activite = result["activite"]
-                            adress = result["adress"]
-                            self.data[-1]["pages"][-1]["cards"].append(
-                                {
-                                    "card_id": card_id,
-                                    "card_url": f"https://www.pagesjaunes.fr/pros/{card_id}#zoneHoraires",
-                                    "info": {
-                                        "title": title,
-                                        "activite": activite,
-                                        "adress": adress,
-                                        "phone": phone,
-                                    },
+                        try:
+                            if self.sb.is_element_present(
+                                f"li.bi:nth-child({index+1})"
+                            ):
+                                result = self.check_valid_card(index) or {
+                                    "isValid": False,
+                                    "phone": "Element not found!",
                                 }
-                            )
-                            yield self.data[-1]["pages"][-1]["cards"][-1]
-                            # ------------------------------------------------
-        except TimeoutException:
-            print("Page not loaded")
+                                isValid = result.get("isValid", False)
+                                phone = result.get(
+                                    "phone", "Element not found!")
+                                if isValid or self.data[-1]["businessType"] == "ALL":
+                                    card_id = self.sb.get_attribute(
+                                        f"li.bi:nth-child({index+1})", "id"
+                                    ).split("-")[1]
+                                    # ---------------- Card Info ----------------
+                                    result = self.get_card_info(index)
+                                    title = result["title"]
+                                    activite = result["activite"]
+                                    address = result["address"]
+                                    self.data[-1]["pages"][-1]["cards"].append(
+                                        {
+                                            "card_id": card_id,
+                                            "card_url": f"https://www.pagesjaunes.fr/pros/{card_id}#zoneHoraires",
+                                            "info": {
+                                                "title": title,
+                                                "activite": activite,
+                                                "address": address,
+                                                "phones": phone,
+                                            },
+                                        }
+                                    )
+                                    yield self.data[-1]["pages"][-1]["cards"][-1]
+                                # ------------------------------------------------
+                        except Exception as e:
+                            print("Error Scrap Card:", e)
+                            yield {"type":"error", "error": f"Fails to scrap card: {index}/{endPage}"}
 
     def run(self):
         """
@@ -222,7 +237,7 @@ class PageJaunesScraper:
             uc_cdp=True,
             # agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             guest_mode=True,
-            headless=True,
+            headless=False,
             undetected=True,
         ) as sb:
             self.sb = sb
@@ -230,46 +245,49 @@ class PageJaunesScraper:
             try:
                 self.sb.open("https://www.pagesjaunes.fr")
                 self.sb.wait_for_ready_state_complete(timeout=10)
-            except TimeoutException:
+            except:
                 print("Page Jaune not found, please check your internet connection!")
-                yield {"error": "Verefication failed!"}
+                yield {"type":"erroe", "error": "Bybass verification failed! Page Jaune not found!"}
                 return
 
             #! Try to pass the CloudFare verification process
             try:
-                if self.sb.wait_for_element_visible("svg#spinner-icon"):
-                    print("Spinner found!")
-                    if self.sb.wait_for_element_visible("input.checkbox", timeout=10):
-                        print("Verify found!")
-                        self.sb.click("input.checkbox")
-            except:
-                print("Verify not found!")
-                pass
-
-            # Handle cookies
-            if self.sb.is_element_visible("span.didomi-continue-without-agreeing"):
-                print("Cookie found!")
-                self.sb.click("span.didomi-continue-without-agreeing")
-
-                # Loop through provided URLs and iterate over each to navigate through each subsequent page.
-                for server_url in self.__server_urls:
-                    print(server_url)
+                if self.sb.is_element_visible("div.claim.wrapper"):
+                    print("Verification passed!")
+                    yield {"type":"progress", "progress": "Verification passed!"}
+                    # Handle cookies
                     try:
-                        url = server_url["url"]
-                        start_limit = int(server_url.get("start-limit"))
-                        end_limit = int(server_url.get("end-limit"))
-                        genre = server_url.get("genre")
-                        self.data.append({"base_url": url, "genre": genre, "pages": []})
-                        for pageNumber in range(start_limit, start_limit + end_limit):
-                            page_url = self.add_arguments_to_url(url, page=pageNumber)
-                            self.data[-1]["pages"].append(
-                                {"page": pageNumber, "page_url": page_url, "cards": []}
+                        if self.sb.is_element_visible("span.didomi-continue-without-agreeing"):
+                            print("Cookie accepted")
+                            self.sb.click("span.didomi-continue-without-agreeing")
+                            yield {"type":"progress", "progress": "Cookies accepted!"}
+                    except:
+                        print("Bybass cookies failed!")
+                        yield {"type":"error", "error": "Bybass cookies failed!"}
+
+                    # Loop through provided URLs and iterate over each to navigate through each subsequent page.
+                    for server_url in self.__server_urls:
+                            print(server_url)
+                            url = server_url["url"]
+                            startPage = int(server_url.get("startPage"))
+                            endPage = int(server_url.get("endPage"))
+                            businessType = server_url.get("businessType")
+                            self.data.append(
+                                {"base_url": url, "businessType": businessType, "pages": []}
                             )
-                            print("|__Next Page__|:", page_url)
-                            yield from self.scrap_page(page_url)
-                    except Exception as e:
-                        print("Error Run:", e)
-                    print("__" * 70)
+                            yield {"type":"progress", "progress": "Scraping url: " + url}
+                            for index, pageNumber in enumerate(range(startPage, startPage + endPage)):
+                                page_url = self.add_arguments_to_url(
+                                    url, page=pageNumber)
+                                self.data[-1]["pages"].append(
+                                    {"page": pageNumber, "page_url": page_url, "cards": []}
+                                )
+                                print("|__Next Page__|:", page_url)
+                                yield from self.scrap_page(page_url, index+1, endPage)
+                            print("__" * 70)
+            except:
+                print("Bybass verification failed!")
+                yield {"type":"error", "error": "Bybass verification failed!"}
             # return self.data
 
     @property
@@ -295,21 +313,4 @@ class PageJaunesScraper:
 # for url in client_urls[:1]:
 #     scraper.add_base_url(url["url"], params=url.get("params"), limit=url.get("limit"))
 # print(scraper.run())
-def passCloudFareVerification(self, attempts=3):
-    """
-    Handles the CloudFare verification process.
-    """
-    try:
-        self.verify_success()
-        return True
-    except Exception as e:
-        if attempts <= 0:
-            return False
 
-        if self.sb.is_element_visible('input[value*="Verify"]'):
-            self.sb.click('input[value*="Verify"]')
-        elif self.sb.is_element_visible('iframe[title*="challenge"]'):
-            self.sb.switch_to_frame('iframe[title*="challenge"]')
-            self.sb.click("span.mark")
-        # time.sleep(2)  # Attente avant de réessayer
-        return self.passCloudFareVerification(attempts - 1)
