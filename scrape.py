@@ -160,7 +160,12 @@ class PageJaunesScraper:
         address = self.get_simple_info(
             f"li.bi:nth-child({index+1}) div.bi-address.small a"
         ).replace(" Voir le plan", "")
-        return {"title": title, "activite": activite, "address": address}
+        #!---------------------------- Address Link ----------------------------
+        address_link_attribute = self.get_attribute(
+            f"li.bi:nth-child({index+1}) div.bi-address.small a", "data-pjlb"
+        )
+        address_link = self.decode_link(address_link_attribute) or "No link found!"
+        return {"title": title, "activite": activite, "address": {"text":address, "link": address_link}}
 
     def scrap_page(self, base_url, index, endPage):
         print("Page: ", base_url)
@@ -170,9 +175,9 @@ class PageJaunesScraper:
         try:
             self.sb.open(base_url)
             self.sb.wait_for_ready_state_complete(timeout=5)
-        except :
+        except:
             print("Page not found!")
-            yield {"type":"error", "error": f"Page not found: {index}/{endPage}"}
+            yield {"type": "error", "message": f"Page not found: {index}/{endPage}"}
             return
         try:
             if self.sb.wait_for_element_visible(
@@ -185,7 +190,7 @@ class PageJaunesScraper:
             #     compteur = self.sb.get_text("span#SEL-compteur")
             #     print(self.get_limits_pages(compteur))
             if self.sb.wait_for_element_visible("span#SEL-nbresultat", timeout=2):
-                yield {"type":"progress", "progress": f"Scraping Page : {index}/{endPage}", "cardsNumbers": 0}
+                yield {"type": "progress", "message": f"Scraping Page : {index}/{endPage}", "cardsNumbers": 0}
                 print("Page Found :", self.sb.get_text("span#SEL-nbresultat"))
                 # --------------------------------- Page is loaded -------------------------------
                 if self.sb.is_element_visible("ul.bi-list"):
@@ -227,7 +232,7 @@ class PageJaunesScraper:
                                 # ------------------------------------------------
                         except Exception as e:
                             print("Error Scrap Card:", e)
-                            yield {"type":"error", "error": f"Fails to scrap card: {index}/{endPage}"}
+                            yield {"type": "error", "message": f"Fails to scrap card: {index}/{endPage}"}
 
     def run(self):
         """
@@ -247,47 +252,48 @@ class PageJaunesScraper:
                 self.sb.wait_for_ready_state_complete(timeout=10)
             except:
                 print("Page Jaune not found, please check your internet connection!")
-                yield {"type":"erroe", "error": "Bybass verification failed! Page Jaune not found!"}
+                yield {"type": "error", "message": "Bybass verification failed! Page Jaune not found!"}
                 return
 
             #! Try to pass the CloudFare verification process
             try:
                 if self.sb.is_element_visible("div.claim.wrapper"):
                     print("Verification passed!")
-                    yield {"type":"progress", "progress": "Verification passed!"}
+                    yield {"type": "progress", "message": "Verification passed!"}
                     # Handle cookies
                     try:
                         if self.sb.is_element_visible("span.didomi-continue-without-agreeing"):
                             print("Cookie accepted")
-                            self.sb.click("span.didomi-continue-without-agreeing")
-                            yield {"type":"progress", "progress": "Cookies accepted!"}
+                            self.sb.click(
+                                "span.didomi-continue-without-agreeing")
+                            yield {"type": "progress", "message": "Cookies accepted!"}
                     except:
                         print("Bybass cookies failed!")
-                        yield {"type":"error", "error": "Bybass cookies failed!"}
+                        yield {"type": "error", "message": "Bybass cookies failed!"}
 
                     # Loop through provided URLs and iterate over each to navigate through each subsequent page.
                     for server_url in self.__server_urls:
-                            print(server_url)
-                            url = server_url["url"]
-                            startPage = int(server_url.get("startPage"))
-                            endPage = int(server_url.get("endPage"))
-                            businessType = server_url.get("businessType")
-                            self.data.append(
-                                {"base_url": url, "businessType": businessType, "pages": []}
+                        print(server_url)
+                        url = server_url["url"]
+                        startPage = int(server_url.get("startPage"))
+                        endPage = int(server_url.get("endPage"))
+                        businessType = server_url.get("businessType")
+                        self.data.append(
+                            {"base_url": url, "businessType": businessType, "pages": []}
+                        )
+                        yield {"type": "progress", "message": "Scraping url: " + url}
+                        for index, pageNumber in enumerate(range(startPage, startPage + endPage)):
+                            page_url = self.add_arguments_to_url(
+                                url, page=pageNumber)
+                            self.data[-1]["pages"].append(
+                                {"page": pageNumber, "page_url": page_url, "cards": []}
                             )
-                            yield {"type":"progress", "progress": "Scraping url: " + url}
-                            for index, pageNumber in enumerate(range(startPage, startPage + endPage)):
-                                page_url = self.add_arguments_to_url(
-                                    url, page=pageNumber)
-                                self.data[-1]["pages"].append(
-                                    {"page": pageNumber, "page_url": page_url, "cards": []}
-                                )
-                                print("|__Next Page__|:", page_url)
-                                yield from self.scrap_page(page_url, index+1, endPage)
-                            print("__" * 70)
+                            print("|__Next Page__|:", page_url)
+                            yield from self.scrap_page(page_url, index+1, endPage)
+                        print("__" * 70)
             except:
                 print("Bybass verification failed!")
-                yield {"type":"error", "error": "Bybass verification failed!"}
+                yield {"type": "error", "message": "Bybass verification failed!"}
             # return self.data
 
     @property
@@ -313,4 +319,3 @@ class PageJaunesScraper:
 # for url in client_urls[:1]:
 #     scraper.add_base_url(url["url"], params=url.get("params"), limit=url.get("limit"))
 # print(scraper.run())
-
