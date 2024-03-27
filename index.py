@@ -4,7 +4,9 @@ from scrape import PageJaunesScraper
 import json
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes in the Flask app
+
+CORS(app)  
+
 scraper = PageJaunesScraper()
 
 
