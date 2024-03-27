@@ -1,7 +1,6 @@
 from seleniumbase import SB
 from selenium.common.exceptions import TimeoutException
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
-from data import client_urls
 import json
 import base64
 import time
