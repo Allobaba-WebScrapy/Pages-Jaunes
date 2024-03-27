@@ -62,11 +62,9 @@ def index():
 
         results = list()
         for result in scraper.run():
-            if 'progress' in result:
-                print("Progress update:", result['progress'])
+            if "type" in result and result["type"]=="progress":
                 yield f"event: progress\ndata: {json.dumps(result)}\n\n"
-            elif 'error' in result:
-                print("Error:", result['error'])
+            elif "type" in result and result["type"]=="error":
                 yield f"errorEvent: error\ndata: {json.dumps(result)}\n\n"
             else:
                 yield f"data: {json.dumps(result)}\n\n"
@@ -84,4 +82,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=4000)
+    app.run(host="0.0.0.0", port=4080)
