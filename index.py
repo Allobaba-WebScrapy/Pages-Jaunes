@@ -1,7 +1,6 @@
 from flask import Flask, jsonify, request, Response
 from flask_cors import CORS  # Import CORS from flask_cors module
 from scrape import PageJaunesScraper
-from data import client_urls
 import json
 import time
 
@@ -82,4 +81,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=4080)
+    app.run(host="0.0.0.0", port=5000)
