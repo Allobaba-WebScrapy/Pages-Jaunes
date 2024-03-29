@@ -1,5 +1,4 @@
 from seleniumbase import SB
-from selenium.common.exceptions import TimeoutException
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 import json
 import base64
@@ -78,7 +77,8 @@ class PageJaunesScraper:
                 gotPhones = []
                 for phoneIndex, phone in enumerate(phones):
                     if self.sb.is_element_visible(
-                        f"li.bi:nth-child({index+1}) div.bi-ctas div.number-contact:nth-child({phoneIndex+1}) > span:last-child"
+                        f"li.bi:nth-"
+                        "child({index+1}) div.bi-ctas div.number-contact:nth-child({phoneIndex+1}) > span:last-child"
                     ):
                         phone_text = self.sb.get_text(
                             f"li.bi:nth-child({index+1}) div.bi-ctas div.number-contact:nth-child({phoneIndex+1}) > span:last-child"
