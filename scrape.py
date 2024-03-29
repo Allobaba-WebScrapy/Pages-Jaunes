@@ -155,6 +155,7 @@ class PageJaunesScraper:
                         "limiCard": {
                             "scrapedCardsNumbers": 0,
                             "avalaibleCardsNumbers": len(lists_li),
+                            "loading": True,
                         },
                     }
                     for index, list in enumerate(lists_li):
@@ -262,6 +263,7 @@ class PageJaunesScraper:
                             print("|__Next Page__|:", page_url)
                             time.sleep(2)
                             yield from self.scrap_page(page_url, index + 1, endPage)
+                            yield {"type": "progress", "message": "Scraping Page completed"}
                         print("__" * 70)
             except:
                 print("Bybass verification failed!")
