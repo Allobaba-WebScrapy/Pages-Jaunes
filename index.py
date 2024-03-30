@@ -12,7 +12,7 @@ scraper = PageJaunesScraper()
 
 @app.route("/", methods=["GET"])
 def home():
-    return jsonify({"Flask": "Welcome to " "the PageJaunes Scraper API!"})
+    return jsonify({"Flask": "Welcome to the PageJaunes Scraper API!"})
 
 
 @app.route("/setup", methods=["POST"])
@@ -28,17 +28,18 @@ def setup():
 def stream():
     def event_stream():
         results = list()
-        yield f"event: progress\ndata: {json.dumps({'type':'progress', 'message': 'Scraping started!'})}\n\n"
+        yield f"event: progress\ndata: {json.dumps({'type':'progress', 'message': 'Scraping started 👍'})}\n\n"
         for result in scraper.run():
             if "type" in result and result["type"] == "progress":
                 yield f"event: progress\ndata: {json.dumps(result)}\n\n"
             elif "type" in result and result["type"] == "error":
-                yield f"errorEvent: error\ndata: {json.dumps(result)}\n\n"
+                print(result)
+                yield f"event: errorEvent\ndata: {json.dumps(result)}\n\n"
             else:
                 results.append(result)
                 yield f"data: {json.dumps(result)}\n\n"
         if not results:
-            yield f"event: errorEvent\ndata: {json.dumps({'type':'error', 'message':'Bybass verification failed No result!'})}\n\n"
+            yield f"event: errorEvent\ndata: {json.dumps({'type':'error', 'message':'Bybass verification failed No result 😢'})}\n\n"
             return
         else:
             # save_to_csv(result, f"static/{scraper.fileName}.csv")
@@ -48,4 +49,4 @@ def stream():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5050)
