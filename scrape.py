@@ -6,8 +6,8 @@ import time
 import logging
 
 class PageJaunesScraper:
-    def __init__(self):
-        self.__server_urls = []
+    def __init__(self, client_url):
+        self.__client_url = client_url
         self.data = []
         self.logger = logging.getLogger(__name__)
 
@@ -187,7 +187,7 @@ class PageJaunesScraper:
                                         },
                                     }
                                 )
-                                yield self.data[-1]["pages"][-1]["cards"][-1]
+                                yield {'type':'response','message':self.data[-1]["pages"][-1]["cards"][-1]}
                             # ------------------------------------------------
                     except Exception as e:
                         self.logger.error("Error Scrap Card: %s", e)
@@ -210,7 +210,8 @@ class PageJaunesScraper:
             self.sb.set_window_size(600, 1200)
             time.sleep(5)
             try:
-                server_url = self.__server_urls[0]
+                print(self.__client_url)
+                server_url = self.__client_url
                 url = server_url["url"]
                 startPage = int(server_url.get("startPage"))
                 endPage = int(server_url.get("endPage"))
@@ -271,8 +272,8 @@ class PageJaunesScraper:
                     except Exception as e:
                         self.logger.error("Check page numbers failed! %s", e)
                         yield {
-                                    "type": "error",
-                                    "message": "Check page numbers failed ❌",
+                            "type": "error",
+                            "message": "Check page numbers failed ❌",
                         }
                         return
 
@@ -304,25 +305,15 @@ class PageJaunesScraper:
             # return self.data
 
     @property
-    def server_urls(self):
+    def client_url(self):
         """
-        Getter method to get the value of self.server_urls.
+        Getter method to get the value of self.client_url.
         """
-        return self.__server_urls
+        return self.__client_url
 
-    @server_urls.setter
-    def server_urls(self, value):
+    @client_url.setter
+    def client_url(self, value):
         """
-        Setter method to set the value of self.server_urls.
+        Setter method to set the value of self.client_url.
         """
-        self.__server_urls = value
-
-        # --------------------------------------- Start App ----------------------------------------
-
-
-# scraper = PageJaunesScraper()
-
-
-# for url in client_urls[:1]:
-#     scraper.add_base_url(url["url"], params=url.get("params"), limit=url.get("limit"))
-# print(scraper.run())
+        self.__client_url = value

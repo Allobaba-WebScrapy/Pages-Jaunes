@@ -101,6 +101,6 @@ COPY ./scrape.py .
 
 
 
-EXPOSE 4030
+EXPOSE 4080
 
 CMD ["python3", "index.py"]
