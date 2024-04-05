@@ -3,13 +3,11 @@ from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 import json
 import base64
 import time
-import logging
 
 class PageJaunesScraper:
     def __init__(self, client_url):
         self.__client_url = client_url
         self.data = []
-        self.logger = logging.getLogger(__name__)
 
     def add_arguments_to_url(self, base_url, **kwargs):
         """
@@ -66,7 +64,7 @@ class PageJaunesScraper:
             return "Unknown"
 
     def check_valid_card(self, index):
-        self.logger.info("Checking card: %s", index)
+        print("Checking card: %s", index)
         try:
             if self.sb.is_element_present(
                 f"li.bi:nth-child({index+1}) div.bi-ctas button"
@@ -84,17 +82,17 @@ class PageJaunesScraper:
                         phone_text = self.sb.get_text(
                             f"li.bi:nth-child({index+1}) div.bi-ctas div.number-contact:nth-child({phoneIndex+1}) > span:last-child"
                         )
-                        self.logger.info(phone_text)
+                        print(phone_text)
                         gotPhones.append(phone_text)
                         if self.data[-1]["businessType"] == self.classify_number(
                             phone_text
                         ):
                             isValid = True
 
-                self.logger.info("Telephone businessType found: %s", list(dict.fromkeys(gotPhones)))
+                print("Telephone businessType found: %s", list(dict.fromkeys(gotPhones)))
                 return {"isValid": isValid, "phone": list(dict.fromkeys(gotPhones))}
         except Exception as e:
-            self.logger.error("Error checking card: %s", e)
+            print("Error checking card: %s", e)
             return {"isValid": False, "phone": "Element not found!"}
 
     def get_card_info(self, index):
@@ -125,7 +123,7 @@ class PageJaunesScraper:
         }
 
     def scrap_page(self, base_url, index, endPage):
-        self.logger.info("Page: %s", base_url)
+        print("Page: %s", base_url)
         """
         Main application logic for scraping data from the base URL.
         """
@@ -133,7 +131,7 @@ class PageJaunesScraper:
             self.sb.open(base_url)
             self.sb.wait_for_ready_state_complete(timeout=5)
         except Exception as e:
-            self.logger.error("Page not found: %s", e)
+            print("Page not found: %s", e)
             yield {"type": "error", "message": f"Page not found: {index}/{endPage} ❌"}
             return
         try:
@@ -190,7 +188,7 @@ class PageJaunesScraper:
                                 yield {'type':'response','message':self.data[-1]["pages"][-1]["cards"][-1]}
                             # ------------------------------------------------
                     except Exception as e:
-                        self.logger.error("Error Scrap Card: %s", e)
+                        print("Error Scrap Card: %s", e)
                         yield {
                             "type": "error",
                             "message": f"Fails to scrap card: {index}/{len(lists_li)} ❌",
@@ -220,7 +218,7 @@ class PageJaunesScraper:
                 self.sb.open(testUrl)
                 self.sb.wait_for_ready_state_complete(timeout=20)
             except Exception as e:
-                self.logger.error("Page Jaune not found, please check your internet connection! %s", e)
+                print("Page Jaune not found, please check your internet connection! %s", e)
                 yield {
                     "type": "error",
                     "message": "Bybass verification failed 😢",
@@ -230,18 +228,18 @@ class PageJaunesScraper:
             #! Try to pass the CloudFare verification process
             try:
                 if self.sb.is_element_visible("div.zoneSwitchTri"):
-                    self.logger.info("Verification passed!")
+                    print("Verification passed!")
                     yield {"type": "progress", "message": "Verification passed"}
                     # Handle cookies
                     try:
                         if self.sb.is_element_visible(
                             "span.didomi-continue-without-agreeing"
                         ):
-                            self.logger.info("Cookie accepted")
+                            print("Cookie accepted")
                             self.sb.click("span.didomi-continue-without-agreeing")
                             yield {"type": "progress", "message": "Cookies accepted"}
                     except Exception as e:
-                        self.logger.error("Bybass cookies failed! %s", e)
+                        print("Bybass cookies failed! %s", e)
                         yield {"type": "error", "message": "Bybass cookies failed ❌"}
 
                     try:
@@ -270,7 +268,7 @@ class PageJaunesScraper:
                             # ---------------------------------------------------------
                             
                     except Exception as e:
-                        self.logger.error("Check page numbers failed! %s", e)
+                        print("Check page numbers failed! %s", e)
                         yield {
                             "type": "error",
                             "message": "Check page numbers failed ❌",
@@ -289,7 +287,7 @@ class PageJaunesScraper:
                         self.data[-1]["pages"].append(
                             {"page": pageNumber, "page_url": page_url, "cards": []}
                         )
-                        self.logger.info("|__Next Page__|: %s", page_url)
+                        print("|__Next Page__|: %s", page_url)
                         time.sleep(2)
                         yield from self.scrap_page(
                             page_url, index + 1, endPage
@@ -298,9 +296,9 @@ class PageJaunesScraper:
                             "type": "progress",
                             "message": f"Scraping Page {startPage+index} completed",
                         }
-                    self.logger.info("__" * 70)
+                    print("__" * 70)
             except Exception as e:
-                self.logger.error("Page Jaune not found, please check your internet connection! %s", e)
+                print("Page Jaune not found, please check your internet connection! %s", e)
                 yield {"type": "error", "message": "Page Jaune not found 😢"}
             # return self.data
 
