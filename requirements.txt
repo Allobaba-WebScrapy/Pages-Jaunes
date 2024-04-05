@@ -83,3 +83,4 @@ pycodestyle==2.9.1;python_version<"3.9"
 pycodestyle==2.11.1;python_version>="3.9"
 Flask
 flask-cors
+gunicorn
